@@ -1,9 +1,9 @@
-import React, { useRef, useState } from 'react';
-import './App.css';
-import * as tf from '@tensorflow/tfjs';
-import * as facemesh from '@tensorflow-models/facemesh';
-import Webcam from 'react-webcam';
-import { drawMesh } from './utilities';
+import React, { useRef, useState } from "react";
+import "./App.css";
+import * as tf from "@tensorflow/tfjs";
+import * as facemesh from "@tensorflow-models/facemesh";
+import Webcam from "react-webcam";
+import { drawMesh } from "./utilities";
 
 function App() {
   const webcamRef = useRef(null);
@@ -40,7 +40,7 @@ function App() {
   // Detect function
   const detect = async (net) => {
     if (
-      typeof webcamRef.current !== 'undefined' &&
+      typeof webcamRef.current !== "undefined" &&
       webcamRef.current !== null &&
       webcamRef.current.video.readyState === 4
     ) {
@@ -61,34 +61,58 @@ function App() {
       const face = await net.estimateFaces(video);
 
       // Get canvas context for drawing
-      const ctx = canvasRef.current.getContext('2d');
+      const ctx = canvasRef.current.getContext("2d");
       drawMesh(face, ctx);
 
       // Draw earrings if image is uploaded and face is detected
       if (earringImage && face.length > 0) {
         face.forEach((prediction) => {
-          // Get ear landmark points (approximately points 356 and 127 for left and right ears)
-          const leftEar = prediction.scaledMesh[356];
-          const rightEar = prediction.scaledMesh[127];
+          // Get more accurate ear landmark points
+          const leftEarTop = prediction.scaledMesh[356]; // Top of left ear
+          const leftEarBottom = prediction.scaledMesh[454]; // Bottom of left ear
+          const rightEarTop = prediction.scaledMesh[127]; // Top of right ear
+          const rightEarBottom = prediction.scaledMesh[234]; // Bottom of right ear
 
-          // Draw earrings at ear positions
-          const earringWidth = 40; // Adjust size as needed
-          const earringHeight = 60;
+          // Additional points for better positioning
+          const leftEarTragion = prediction.scaledMesh[234]; // Ear connection point
+          const rightEarTragion = prediction.scaledMesh[454]; // Ear connection point
 
+          // Calculate ear heights to scale earrings proportionally
+          const leftEarHeight = Math.abs(leftEarBottom[1] - leftEarTop[1]);
+          const rightEarHeight = Math.abs(rightEarBottom[1] - rightEarTop[1]);
+
+          // Scale earrings based on ear size (increased size by adjusting multipliers)
+          const leftEarringHeight = leftEarHeight * 1.8; // Increased from 1.2 to 1.8
+          const leftEarringWidth = leftEarringHeight * 0.7; // Increased from 0.6 to 0.7
+          const rightEarringHeight = rightEarHeight * 1.8;
+          const rightEarringWidth = rightEarringHeight * 0.7;
+
+          // Improved position calculations using ear tragion points
+          const leftEarCenter = [
+            leftEarTragion[0] - leftEarringWidth * 0.3, // Offset from ear connection point
+            leftEarTragion[1] - leftEarringHeight * 0.2, // Slightly above ear connection
+          ];
+
+          const rightEarCenter = [
+            rightEarTragion[0] + rightEarringWidth * 0.3, // Offset from ear connection point
+            rightEarTragion[1] - rightEarringHeight * 0.2, // Slightly above ear connection
+          ];
+
+          // Draw earrings with improved positioning
           ctx.drawImage(
             earringImage,
-            leftEar[0] - earringWidth / 2,
-            leftEar[1] - earringHeight / 2,
-            earringWidth,
-            earringHeight
+            leftEarCenter[0] - leftEarringWidth / 2,
+            leftEarCenter[1] - leftEarringHeight / 2,
+            leftEarringWidth,
+            leftEarringHeight
           );
 
           ctx.drawImage(
             earringImage,
-            rightEar[0] - earringWidth / 2,
-            rightEar[1] - earringHeight / 2,
-            earringWidth,
-            earringHeight
+            rightEarCenter[0] - rightEarringWidth / 2,
+            rightEarCenter[1] - rightEarringHeight / 2,
+            rightEarringWidth,
+            rightEarringHeight
           );
         });
       }
@@ -114,7 +138,7 @@ function App() {
               <img
                 src={earringImage.src}
                 alt="Earring preview"
-                style={{ maxWidth: '100px' }}
+                style={{ maxWidth: "100px" }}
               />
             </div>
           )}
@@ -126,12 +150,12 @@ function App() {
             <Webcam
               ref={webcamRef}
               style={{
-                position: 'absolute',
-                marginLeft: 'auto',
-                marginRight: 'auto',
+                position: "absolute",
+                marginLeft: "auto",
+                marginRight: "auto",
                 left: 0,
                 right: 0,
-                textAlign: 'center',
+                textAlign: "center",
                 zIndex: 9,
                 width: 640,
                 height: 480,
@@ -140,12 +164,12 @@ function App() {
             <canvas
               ref={canvasRef}
               style={{
-                position: 'absolute',
-                marginLeft: 'auto',
-                marginRight: 'auto',
+                position: "absolute",
+                marginLeft: "auto",
+                marginRight: "auto",
                 left: 0,
                 right: 0,
-                textAlign: 'center',
+                textAlign: "center",
                 zIndex: 9,
                 width: 640,
                 height: 480,
